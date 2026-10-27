@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
+<title>Тренажёр ОГЭ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@500;700;800&family=PT+Sans:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Макет: одна колонка на листе в клетку. Шапка с таймером прилипает сверху, задание лежит на белой карточке. */
+:root{
+  --paper:#F2F5FA; --grid:#DCE5F0; --card:#FFFFFF; --ink:#14234B; --muted:#4F5F7E;
+  --pen:#2447D6; --pen-soft:#E3E9FD; --red:#C8342A; --red-soft:#FCE6E3; --green:#17734D; --green-soft:#DDF3E8;
+  --line:#C5D0E0; --on-pen:#FFFFFF;
+  --f-display:'Alegreya',Georgia,'Times New Roman',serif;
+  --f-body:'PT Sans','Segoe UI',Arial,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1623; --grid:#1A2536; --card:#16202F; --ink:#E7EDF8; --muted:#9DABC6;
+    --pen:#8CA5FF; --pen-soft:#202C52; --red:#FF8C82; --red-soft:#3A1F22; --green:#5BD1A0; --green-soft:#17352A;
+    --line:#2E3C52; --on-pen:#0F1623; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1623; --grid:#1A2536; --card:#16202F; --ink:#E7EDF8; --muted:#9DABC6;
+  --pen:#8CA5FF; --pen-soft:#202C52; --red:#FF8C82; --red-soft:#3A1F22; --green:#5BD1A0; --green-soft:#17352A;
+  --line:#2E3C52; --on-pen:#0F1623; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font:18px/1.5 var(--f-body);
+  padding-block:0 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  min-height:100vh;
+}
+.wrap{max-width:760px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(40px,9vw,64px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:28px;font-weight:700}
+p{margin:0}
+[hidden]{display:none!important}
+.eyebrow{font:600 14px/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--pen)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.view{display:flex;flex-direction:column;gap:18px;padding-top:28px}
+.lead{font-size:20px;color:var(--muted);max-width:34em}
+ol.rules{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:10px}
+ol.rules li::marker{font:600 16px var(--f-mono);color:var(--pen)}
+.pen-red{color:var(--red);font-weight:700}
+label{font-weight:700;font-size:16px}
+input[type=text]{
+  font:600 22px var(--f-mono);color:var(--ink);background:var(--paper);
+  border:2px solid var(--line);border-radius:10px;padding:12px 14px;width:100%;min-width:0;
+}
+input[type=text]:focus-visible,button:focus-visible,textarea:focus-visible{outline:3px solid var(--pen);outline-offset:2px}
+button{
+  font:700 19px var(--f-body);background:var(--pen);color:var(--on-pen);border:0;border-radius:10px;
+  padding:14px 22px;cursor:pointer;min-height:50px;
+}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.row>*{flex:1 1 140px}
+/* шапка задания */
+.bar{
+  position:sticky;top:env(safe-area-inset-top,0px);z-index:5;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:12px;
+}
+.b-left{display:flex;flex-direction:column;min-width:0}
+.b-left b{font:700 20px var(--f-display)}
+.b-left span{font-size:15px;color:var(--muted)}
+.clock{font:600 30px var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.clock.low{color:var(--red)}
+.ticks{display:flex;gap:5px;flex-wrap:wrap}
+.tick{width:22px;height:22px;border-radius:5px;border:2px solid var(--line);background:var(--card);font:600 11px/18px var(--f-mono);text-align:center;color:var(--muted)}
+.tick.done{background:var(--pen);border-color:var(--pen);color:var(--on-pen)}
+.tick.half{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+.tick.cur{border-color:var(--pen);border-width:3px;color:var(--pen)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+/* задание */
+.tnum{font:600 14px var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--pen)}
+.tq{font-size:21px;line-height:1.55}
+.tq p+p{margin-top:8px}
+.tq ol{margin:8px 0 0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px}
+.fr{display:inline-grid;vertical-align:middle;text-align:center;line-height:1.15;margin:0 .15em;font-size:.95em}
+.fr>span:first-child{border-bottom:1.5px solid currentColor;padding:0 .25em}
+sup,sub{font-size:.7em;line-height:0}
+.fig{display:flex;justify-content:center}
+svg.geo,svg.gridfig{width:100%;max-width:340px;height:auto;display:block}
+.g-circ{fill:none;stroke:var(--ink);stroke-width:2}
+.g-seg{stroke:var(--pen);stroke-width:2.5;stroke-linecap:round}
+.g-ra{fill:none;stroke:var(--ink);stroke-width:1.5}
+.g-dot{fill:var(--ink)}
+.g-lab{font:700 17px var(--f-display);fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.g-grid{stroke:var(--line);stroke-width:1}
+.g-poly{fill:var(--pen-soft);stroke:var(--pen);stroke-width:3;stroke-linejoin:round}
+.g-note{font:600 12px var(--f-mono);fill:var(--muted)}
+.banner{background:var(--red-soft);color:var(--ink);border-left:5px solid var(--red);border-radius:8px;padding:12px 14px;font-size:17px}
+.banner b{color:var(--red)}
+.hint{font-size:15px;color:var(--muted)}
+.exits{font:600 15px var(--f-mono);color:var(--muted);text-align:center}
+.exits.bad{color:var(--red)}
+/* итог */
+.score{font:800 72px/1 var(--f-display);color:var(--pen)}
+.score small{font-size:30px;color:var(--muted);font-weight:700}
+.res{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.res div{border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:15px;display:flex;justify-content:space-between;gap:6px}
+.res .ok{background:var(--green-soft);border-color:var(--green)}
+.res .half{background:var(--red-soft);border-color:var(--red)}
+.res b{font-family:var(--f-mono)}
+.code{font:500 14px/1.4 var(--f-mono);word-break:break-all;background:var(--paper);border:1.5px dashed var(--line);border-radius:8px;padding:12px;user-select:all}
+/* учитель */
+textarea{width:100%;min-height:130px;font:500 13px/1.4 var(--f-mono);background:var(--paper);color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:10px}
+.tbl{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;font-size:15px;min-width:100%}
+th,td{border:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card)}
+td.s1{background:var(--green-soft);color:var(--green);font-weight:700}
+td.sh{background:var(--red-soft);color:var(--red);font-weight:700}
+td.s0{color:var(--muted)}
+td.low{background:var(--red-soft);color:var(--red);font-weight:700}
+tfoot td{font-weight:700;background:var(--paper)}
+.keyitem{border-top:1.5px solid var(--line);padding-top:12px}
+.keyitem .ans{font:600 17px var(--f-mono);color:var(--green);margin-top:6px}
+.wrap-w{max-width:1100px}
+@media (prefers-reduced-motion:no-preference){button{transition:filter .15s}button:hover:not(:disabled){filter:brightness(1.08)}}
+</style>
+
+</head><body>
+<div class="wrap" id="app">
+
+<section class="view" id="v-start">
+  <header style="display:flex;flex-direction:column;gap:10px;padding-top:10px">
+    <p class="eyebrow">9 класс · подготовка к ОГЭ</p>
+    <h1>Тренажёр ОГЭ</h1>
+    <p class="lead">13 заданий: вычисления, вероятность, формулы и геометрия. 35 минут. У каждого свой вариант, числа у соседей другие.</p>
+  </header>
+  <div class="card">
+    <h2>Правила</h2>
+    <ol class="rules">
+      <li>Задания идут по порядку, как в первой части ОГЭ. Вернуться назад нельзя. Если не получается, нажмите «Пропустить».</li>
+      <li>Считаем на черновике, ручкой, как на экзамене. В ответ записываем число.</li>
+      <li><span class="pen-red">Не выходите с этой страницы.</span> Если вы свернули браузер, открыли другое приложение или обновили страницу, задание заменится новым с другими числами. За первый выход максимум за это задание 0,5 балла, за второй 0 баллов.</li>
+      <li>Включите режим «Не беспокоить», чтобы уведомления не выбросили вас со страницы.</li>
+      <li>Учитель видит, сколько раз вы выходили.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <label for="name">Фамилия и имя</label>
+    <input type="text" id="name" autocomplete="off" autocapitalize="words" maxlength="40" placeholder="Например, Иванов Пётр">
+    <button id="b-start" disabled>Начать, 35 минут</button>
+    <p class="hint" id="resume-note" hidden></p>
+  </div>
+</section>
+
+<section class="view" id="v-task" hidden>
+  <div class="bar">
+    <div class="b-left"><b id="t-count">Задание 1 из 13</b><span id="t-topic"></span></div>
+    <div class="clock" id="clock" aria-label="Осталось времени">35:00</div>
+  </div>
+  <div class="ticks" id="ticks" aria-hidden="true"></div>
+  <div class="card">
+    <div class="banner" id="banner" role="alert" hidden></div>
+    <p class="tnum" id="tn"></p>
+    <div class="tq" id="tq"></div>
+    <div class="fig" id="tfig"></div>
+    <label for="ans" id="ans-label">Ответ</label>
+    <input type="text" id="ans" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="decimal" maxlength="12">
+    <p class="hint" id="ans-hint"></p>
+    <div class="row">
+      <button id="b-ok">Ответить</button>
+      <button id="b-skip" class="ghost">Пропустить</button>
+    </div>
+  </div>
+  <p class="exits" id="exits"></p>
+</section>
+
+<section class="view" id="v-end" hidden>
+  <header style="display:flex;flex-direction:column;gap:8px;padding-top:10px">
+    <p class="eyebrow" id="end-eyebrow">Работа сдана</p>
+    <h1 id="end-name"></h1>
+  </header>
+  <div class="card">
+    <div class="score" id="score"></div>
+    <p id="end-meta" class="hint"></p>
+    <div class="res" id="res"></div>
+  </div>
+  <div class="card">
+    <h2>Покажите экран учителю</h2>
+    <p>Или отправьте этот код. По нему учитель увидит ваши баллы, выходы и время.</p>
+    <div class="code" id="code"></div>
+    <button id="b-copy">Скопировать код</button>
+    <p class="hint" id="copy-note" hidden></p>
+    <p class="hint">Верные ответы разберём вместе после урока.</p>
+  </div>
+</section>
+
+<section class="view wrap-w" id="v-teacher" hidden style="max-width:none">
+  <header style="display:flex;flex-direction:column;gap:8px;padding-top:10px">
+    <p class="eyebrow">Для учителя</p>
+    <h1>Результаты класса</h1>
+    <p class="lead">Вставьте коды учеников, по одному в строке. Таблица покажет баллы, выходы со страницы и слабые темы.</p>
+  </header>
+  <div class="card">
+    <label for="codes">Коды учеников</label>
+    <textarea id="codes" spellcheck="false"></textarea>
+    <div class="row"><button id="b-table">Показать таблицу</button><button id="b-key" class="ghost">Пример варианта с ответами</button><button id="b-reset" class="ghost">Начать пробную попытку заново</button></div>
+    <p class="hint" id="t-err" hidden></p>
+  </div>
+  <div class="card" id="t-out" hidden>
+    <h2>Таблица класса</h2>
+    <div class="tbl" id="t-tbl"></div>
+    <h2>Темы по номерам ОГЭ</h2>
+    <div class="tbl" id="t-topics"></div>
+    <p class="hint">Красным отмечены темы, которые решили меньше половины учеников. ½ значит, что баллы за задание уменьшены после выхода со страницы.</p>
+  </div>
+  <div class="card" id="k-out" hidden></div>
+</section>
+
+</div>
+
+<script>
+/*GEN-START*/
+const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+const Fr=(n,d=1)=>{if(d<0){n=-n;d=-d}const g=gcd(n,d)||1;return{n:n/g,d:d/g}};
+const fadd=(x,y)=>Fr(x.n*y.d+y.n*x.d,x.d*y.d),fsub=(x,y)=>Fr(x.n*y.d-y.n*x.d,x.d*y.d),fmul=(x,y)=>Fr(x.n*y.n,x.d*y.d),fdiv=(x,y)=>Fr(x.n*y.d,x.d*y.n),fval=x=>x.n/x.d;
+const TERM=[1,2,4,5,8,10,20,25,40,50,100,125,200,250,500,1000];
+const terminating=x=>TERM.includes(x.d);
+const rnd=n=>Math.round(n*1e6)/1e6;
+const fmt=n=>String(rnd(n)).replace('.',',');
+const frHTML=(n,d)=>`<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeR(rng){return{rng,int:(a,b)=>a+Math.floor(rng()*(b-a+1)),pick:a=>a[Math.floor(rng()*a.length)],
+  shuffle:a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}}}
+const TRIP=[[3,4,5],[5,12,13],[8,15,17],[7,24,25]];
+function trip(r){for(;;){const t=r.pick(TRIP),k=r.int(1,4);if(t[2]>5&&k>2)continue;if(t[2]*k>60)continue;return{a:t[0]*k,b:t[1]*k,c:t[2]*k,k,t}}}
+
+/* ---------- № 6. Вычисления ---------- */
+function gen6(r,tpl){
+  for(let i=0;i<800;i++){
+    if(tpl===0){
+      const bs=[2,4,5,8,10],b=r.pick(bs),d=r.pick(bs),a=r.int(1,9),c=r.int(1,9),m=r.pick([2,4,5,8,10,20]);
+      if(a>=2*b||c>=2*d||a%b===0||c%d===0)continue;
+      const x=fsub(Fr(a,b),Fr(c,d));if(x.n<=0)continue;
+      const res=fmul(x,Fr(m));if(!terminating(res)||fval(res)<1||fval(res)>40)continue;
+      return{html:`<p>Найдите значение выражения (${frHTML(a,b)} − ${frHTML(c,d)}) · ${m}.</p>`,ans:rnd(fval(res)),kind:'num'};
+    }
+    const n=r.pick([2,4,5,6,8,12,15,25]),q=r.int(3,12),p=r.pick([4,5,6,15,25]),s=r.int(2,6),minus=r.rng()<0.5;
+    const dividend=Fr(n*q,10),res=minus?q-p*s/10:q+p*s/10;
+    if(res<=0||res>60)continue;
+    const dv=fval(dividend),dd=n/10,pp=p/10;
+    return{html:`<p>Найдите значение выражения ${fmt(dv)} : ${fmt(dd)} ${minus?'−':'+'} ${fmt(pp)} · ${s}.</p>`,ans:rnd(res),kind:'num'};
+  }
+}
+
+/* ---------- № 10. Вероятность ---------- */
+function gen10a(r,tpl){
+  if(tpl===0){
+    const N=r.pick([20,25,40,50]);
+    for(;;){
+      const a=r.int(3,Math.floor(N*.4)),b=r.int(3,Math.floor(N*.4)),c=N-a-b;if(c<3)continue;
+      const w=[['чёрных','чёрное',a],['жёлтых','жёлтое',b],['зелёных','зелёное',c]],k=r.pick(w);
+      return{html:`<p>В фирме такси в данный момент свободно ${N} машин: ${a} чёрных, ${b} жёлтых и ${c} зелёных. На вызов выехала одна из машин, случайно оказавшаяся ближе всего к заказчику. Найдите вероятность того, что к нему приедет ${k[1]} такси.</p>`,ans:rnd(k[2]/N),kind:'num'};
+    }
+  }
+  if(tpl===1){
+    const N=r.pick([20,25,40,50]),k=r.int(3,9),th=r.pick(['Вписанная окружность','Параллелограмм','Площади фигур','Углы в окружности','Тригонометрия']);
+    return{html:`<p>На экзамене ${N} билетов, ${k} из них содержат вопрос по теме «${th}». Найдите вероятность того, что в случайно выбранном билете школьнику не достанется вопроса по теме «${th}».</p>`,ans:rnd((N-k)/N),kind:'num'};
+  }
+  const N=r.pick([50,100]),k=N===50?r.int(2,9):r.int(3,14);
+  return{html:`<p>В среднем из ${N} карманных фонариков, поступивших в продажу, ${k} неисправны. Найдите вероятность того, что один выбранный наудачу в магазине фонарик окажется исправным.</p>`,ans:rnd((N-k)/N),kind:'num'};
+}
+function gen10b(r,tpl){
+  if(tpl===0){
+    for(let i=0;i<2000;i++){
+      const T=r.pick([40,50,80,100]),d=r.pick([3,4,5]),f=r.int(4,Math.floor(T/3));
+      if((T-f)%(d-1))continue;const per=(T-f)/(d-1);if(per<=0)continue;
+      if(!terminating(Fr(per,T)))continue;
+      const days=d===5?'5 дней':`${d} дня`;
+      return{html:`<p>Конкурс исполнителей проводится в течение ${days}. Всего заявлено ${T} выступлений — по одному от каждой страны. В первый день запланировано ${f} выступлений, остальные распределены поровну между оставшимися днями. Порядок выступлений определяется жеребьёвкой. Какова вероятность того, что выступление представителя России состоится в третий день конкурса?</p>`,ans:rnd(per/T),kind:'num'};
+    }
+  }
+  const N=r.pick([20,25,40]);
+  for(;;){
+    const a=r.int(3,Math.floor(N*.3)),b=r.int(3,Math.floor(N*.3)),c=r.int(3,Math.floor(N*.3)),e=N-a-b-c;if(e<3)continue;
+    const w=[['Финляндии',a],['Дании',b],['Швеции',c],['Норвегии',e]],k=r.pick(w);
+    return{html:`<p>В соревнованиях по толканию ядра участвуют ${N} спортсменов: ${a} из Финляндии, ${b} из Дании, ${c} из Швеции, остальные из Норвегии. Порядок выступлений определяется жребием. Найдите вероятность того, что спортсмен, который выступает последним, окажется из ${k[0]}.</p>`,ans:rnd(k[1]/N),kind:'num'};
+  }
+}
+
+/* ---------- № 12. Формулы ---------- */
+function gen12(r,tpl){
+  if(tpl===0){const w=r.int(2,6),R=r.pick([0.5,1.5,2,2.5,3,4,6]);
+    return{html:`<p>Центростремительное ускорение при движении по окружности (в м/с<sup>2</sup>) вычисляется по формуле a = ω<sup>2</sup>R, где ω — угловая скорость (в с<sup>−1</sup>), R — радиус окружности (в метрах). Пользуясь этой формулой, найдите ускорение a, если R = ${fmt(R)} м и ω = ${w} с<sup>−1</sup>.</p>`,ans:rnd(w*w*R),kind:'num'};}
+  if(tpl===1){const w=r.int(2,6),R=r.pick([1,1.5,2,2.5,3,4,5]);
+    return{html:`<p>Центростремительное ускорение при движении по окружности (в м/с<sup>2</sup>) вычисляется по формуле a = ω<sup>2</sup>R, где ω — угловая скорость (в с<sup>−1</sup>), R — радиус окружности (в метрах). Пользуясь этой формулой, найдите радиус R, если a = ${fmt(w*w*R)} м/с<sup>2</sup> и ω = ${w} с<sup>−1</sup>.</p>`,ans:R,kind:'num'};}
+  if(tpl===2){const k=r.int(1,20),F=32+9*k;
+    return{html:`<p>Перевести значение температуры из шкалы Фаренгейта в шкалу Цельсия позволяет формула t<sub>C</sub> = ${frHTML(5,9)}(t<sub>F</sub> − 32), где t<sub>C</sub> — температура в градусах Цельсия, t<sub>F</sub> — температура в градусах Фаренгейта. Какая температура по шкале Цельсия соответствует ${F} градусам по шкале Фаренгейта?</p>`,ans:5*k,kind:'num'};}
+  if(tpl===3){const I=r.pick([2,3,4,5,0.5,1.5]),R=r.pick([2,4,5,10,20,40]);
+    return{html:`<p>Мощность постоянного тока (в ваттах) вычисляется по формуле P = I<sup>2</sup>R, где I — сила тока (в амперах), R — сопротивление (в омах). Пользуясь этой формулой, найдите мощность P (в ваттах), если R = ${R} Ом и I = ${fmt(I)} А.</p>`,ans:rnd(I*I*R),kind:'num'};}
+  if(tpl===4){const d1=r.pick([4,5,6,8,10,12,15]),d2=r.pick([6,8,10,12,14,20]),sn=r.pick([0.2,0.25,0.4,0.5,0.6,0.8]);
+    return{html:`<p>Площадь четырёхугольника можно вычислить по формуле S = ${frHTML('d<sub>1</sub>d<sub>2</sub>sin α',2)}, где d<sub>1</sub> и d<sub>2</sub> — длины диагоналей четырёхугольника, α — угол между диагоналями. Пользуясь этой формулой, найдите площадь S, если d<sub>1</sub> = ${d1}, d<sub>2</sub> = ${d2}, sin α = ${fmt(sn)}.</p>`,ans:rnd(d1*d2*sn/2),kind:'num'};}
+  const v=r.int(2,12),a=r.int(1,6),t=r.pick([2,4,6,10]);
+  return{html:`<p>Путь, пройденный телом при равноускоренном движении (в метрах), вычисляется по формуле s = v<sub>0</sub>t + ${frHTML('at<sup>2</sup>',2)}, где v<sub>0</sub> — начальная скорость (в м/с), a — ускорение (в м/с<sup>2</sup>), t — время (в секундах). Найдите путь s, если v<sub>0</sub> = ${v} м/с, a = ${a} м/с<sup>2</sup>, t = ${t} с.</p>`,ans:v*t+a*t*t/2,kind:'num'};
+}
+
+/* ---------- № 15. Треугольники ---------- */
+function gen15(r,tpl){
+  if(tpl===0){const b=r.pick([20,30,40,50,60,70,80,100,110,120,130,140]);
+    return{html:`<p>В равнобедренном треугольнике ABC с основанием AC угол B равен ${b}°. Найдите угол A. Ответ дайте в градусах.</p>`,ans:(180-b)/2,kind:'num'};}
+  if(tpl===1){const t=trip(r),sw=r.rng()<.5,a=sw?t.b:t.a,b=sw?t.a:t.b;
+    if(r.rng()<.5)return{html:`<p>В треугольнике ABC угол C равен 90°, AC = ${a}, BC = ${b}. Найдите AB.</p>`,ans:t.c,kind:'num'};
+    return{html:`<p>В треугольнике ABC угол C равен 90°, AB = ${t.c}, AC = ${a}. Найдите BC.</p>`,ans:b,kind:'num'};}
+  if(tpl===2){for(;;){const ac=r.pick([6,8,10,12,14,16,18,20,24]),ab=r.int(6,20),bc=r.int(6,20);
+      if(Math.abs(ab-bc)>=ac||ac>=ab+bc)continue;
+      return{html:`<p>В треугольнике ABC стороны AB = ${ab}, BC = ${bc} и AC = ${ac}. Точки M и N — середины сторон AB и BC соответственно. Найдите длину отрезка MN.</p>`,ans:ac/2,kind:'num'};}}
+  if(tpl===3){const tr=r.rng()<.7?[3,4,5]:[7,24,25],kk=tr[2]===5?r.int(1,4):1,sw=r.rng()<.5,x=tr[0]*kk,y=tr[1]*kk;
+    const bc=sw?x:y,ac=sw?y:x,ab=tr[2]*kk,cosq=r.rng()<.5;
+    return{html:`<p>В треугольнике ABC угол C равен 90°, AC = ${ac}, BC = ${bc}. Найдите ${cosq?'cos':'sin'} A.</p>`,ans:rnd(cosq?ac/ab:bc/ab),kind:'num'};}
+  if(tpl===4){const t=trip(r);
+    return{html:`<p>В прямоугольном треугольнике катеты равны ${t.a} и ${t.b}. Найдите медиану, проведённую к гипотенузе.</p>`,ans:t.c/2,kind:'num'};}
+  for(;;){const a=r.pick([4,5,6,8,10,12]),h=r.int(3,12);if((a*h)%2)continue;
+    return{html:`<p>Площадь треугольника ABC равна ${a*h/2}, сторона BC равна ${a}. Найдите длину высоты AH, проведённой к стороне BC.</p>`,ans:h,kind:'num'};}
+}
+
+/* ---------- чертежи ---------- */
+function svgGeo(P,segs,o={}){
+  const size=o.size||280,pad=36,names=Object.keys(P),pts=names.map(n=>P[n]);
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),cc=o.center||[0,0];
+  if(o.circle){xs.push(cc[0]-o.circle,cc[0]+o.circle);ys.push(cc[1]-o.circle,cc[1]+o.circle)}
+  const minx=Math.min(...xs),maxx=Math.max(...xs),miny=Math.min(...ys),maxy=Math.max(...ys);
+  const s=(size-2*pad)/Math.max(maxx-minx,maxy-miny,1e-9);
+  const ox=pad+((size-2*pad)-(maxx-minx)*s)/2,oy=pad+((size-2*pad)-(maxy-miny)*s)/2;
+  const X=x=>+(ox+(x-minx)*s).toFixed(1),Y=y=>+(oy+(maxy-y)*s).toFixed(1);
+  let g='';
+  if(o.circle)g+=`<circle cx="${X(cc[0])}" cy="${Y(cc[1])}" r="${(o.circle*s).toFixed(1)}" class="g-circ"/>`;
+  segs.forEach(([a,b])=>{g+=`<line x1="${X(P[a][0])}" y1="${Y(P[a][1])}" x2="${X(P[b][0])}" y2="${Y(P[b][1])}" class="g-seg"/>`});
+  (o.ra||[]).forEach(([v,p,q])=>{
+    const vx=X(P[v][0]),vy=Y(P[v][1]);const u=n=>{const dx=X(P[n][0])-vx,dy=Y(P[n][1])-vy,l=Math.hypot(dx,dy)||1;return[dx/l*12,dy/l*12]};
+    const a=u(p),b=u(q);g+=`<path class="g-ra" d="M${(vx+a[0]).toFixed(1)} ${(vy+a[1]).toFixed(1)} L${(vx+a[0]+b[0]).toFixed(1)} ${(vy+a[1]+b[1]).toFixed(1)} L${(vx+b[0]).toFixed(1)} ${(vy+b[1]).toFixed(1)}"/>`});
+  names.forEach(n=>{g+=`<circle cx="${X(P[n][0])}" cy="${Y(P[n][1])}" r="3.5" class="g-dot"/>`});
+  const cxs=pts.reduce((a,p)=>a+p[0],0)/pts.length,cys=pts.reduce((a,p)=>a+p[1],0)/pts.length;
+  names.forEach(n=>{
+    let dx,dy;if(o.lo&&o.lo[n]){[dx,dy]=o.lo[n]}else{
+      const ax=o.circle?cc[0]:cxs,ay=o.circle?cc[1]:cys;let vx=(P[n][0]-ax)*s,vy=-(P[n][1]-ay)*s;const l=Math.hypot(vx,vy)||1;dx=vx/l*17;dy=vy/l*17;}
+    g+=`<text class="g-lab" x="${(X(P[n][0])+dx).toFixed(1)}" y="${(Y(P[n][1])+dy).toFixed(1)}">${n}</text>`});
+  return`<svg class="geo" viewBox="0 0 ${size} ${size}" role="img" aria-label="${o.alt||'Чертёж'}">${g}</svg>`;
+}
+const cs=a=>Math.cos(a*Math.PI/180),sn=a=>Math.sin(a*Math.PI/180);
+
+/* ---------- № 16. Окружность ---------- */
+function gen16(r,tpl){
+  if(tpl===0){
+    const al=r.pick([50,60,70,80,90,100,110,120,130,140,150]);
+    const P={O:[0,0],A:[cs(-90-al/2),sn(-90-al/2)],B:[cs(-90+al/2),sn(-90+al/2)],C:[0,1]};
+    const svg=svgGeo(P,[['O','A'],['O','B'],['C','A'],['C','B']],{circle:1,lo:{O:[14,-14]},alt:'Окружность с центром O, центральный угол AOB и вписанный угол ACB'});
+    if(r.rng()<.5)return{html:`<p>Центральный угол AOB равен ${al}°. Найдите вписанный угол ACB, опирающийся на ту же дугу. Ответ дайте в градусах.</p>`,svg,ans:al/2,kind:'num'};
+    return{html:`<p>Вписанный угол ACB равен ${al/2}°. Найдите центральный угол AOB, опирающийся на ту же дугу. Ответ дайте в градусах.</p>`,svg,ans:al,kind:'num'};
+  }
+  if(tpl===1){
+    const T=r.pick([[3,4,5],[5,12,13],[8,15,17]]),k=T[2]===5?r.int(1,3):1,rr=T[0]*k,t=T[1]*k,ao=T[2]*k;
+    const P={O:[0,0],B:[0,rr],A:[t,rr]};
+    const svg=svgGeo(P,[['O','B'],['B','A'],['O','A']],{circle:rr,ra:[['B','O','A']],lo:{O:[-15,12]},alt:'Окружность с центром O и касательная AB'});
+    return{html:`<p>Из точки A проведена касательная AB к окружности с центром O (B — точка касания). Найдите AB, если радиус окружности равен ${rr}, а AO = ${ao}.</p>`,svg,ans:t,kind:'num'};
+  }
+  if(tpl===2){
+    const T=r.pick([[3,4,5],[5,12,13]]),k=T[2]===5?r.int(1,3):1,R=T[2]*k,d=T[0]*k,c=2*T[1]*k;
+    const P={O:[0,0],A:[-c/2,-d],B:[c/2,-d],H:[0,-d]};
+    const svg=svgGeo(P,[['A','B'],['O','H']],{circle:R,ra:[['H','O','B']],lo:{O:[14,-12],H:[14,14]},alt:'Окружность с центром O и хорда AB'});
+    return{html:`<p>Радиус окружности с центром O равен ${R}. Расстояние от центра O до хорды AB равно ${d}. Найдите длину хорды AB.</p>`,svg,ans:c,kind:'num'};
+  }
+  if(tpl===3){
+    const al=r.pick([20,25,30,35,40,50,55,60,65,70]);
+    const P={A:[-1,0],B:[1,0],C:[cs(2*al),sn(2*al)]};
+    const svg=svgGeo(P,[['A','B'],['A','C'],['C','B']],{circle:1,alt:'Окружность, диаметр AB и точка C на окружности'});
+    return{html:`<p>Отрезок AB — диаметр окружности, точка C лежит на окружности. Угол CAB равен ${al}°. Найдите угол CBA. Ответ дайте в градусах.</p>`,svg,ans:90-al,kind:'num'};
+  }
+  const al=r.int(5,16)*5+10;
+  const P={A:[cs(200),sn(200)],B:[cs(120),sn(120)],C:[cs(40),sn(40)],D:[cs(-60),sn(-60)]};
+  const svg=svgGeo(P,[['A','B'],['B','C'],['C','D'],['D','A']],{circle:1,alt:'Четырёхугольник ABCD, вписанный в окружность'});
+  return{html:`<p>Четырёхугольник ABCD вписан в окружность. Угол A равен ${al}°. Найдите угол C. Ответ дайте в градусах.</p>`,svg,ans:180-al,kind:'num'};
+}
+
+/* ---------- № 17. Четырёхугольники ---------- */
+function gen17(r,tpl){
+  if(tpl===0){const d=r.pick([10,16,20,24,30,36,40,50,60]);
+    return{html:`<p>Найдите меньший угол параллелограмма, если разность двух его углов равна ${d}°. Ответ дайте в градусах.</p>`,ans:(180-d)/2,kind:'num'};}
+  if(tpl===1){const p=r.pick([[1,2],[1,3],[1,4],[1,5],[2,3],[2,7],[3,7],[4,5],[1,8],[1,9]]),big=r.rng()<.4;
+    return{html:`<p>Два угла параллелограмма, прилежащие к одной стороне, относятся как ${p[0]} : ${p[1]}. Найдите ${big?'больший':'меньший'} угол параллелограмма. Ответ дайте в градусах.</p>`,ans:180*(big?p[1]:p[0])/(p[0]+p[1]),kind:'num'};}
+  if(tpl===2){const T=r.pick([[3,4,5],[3,4,5],[5,12,13]]),k=T[2]===5?r.int(1,4):r.int(1,2);
+    return{html:`<p>Диагонали ромба равны ${2*T[0]*k} и ${2*T[1]*k}. Найдите сторону ромба.</p>`,ans:T[2]*k,kind:'num'};}
+  if(tpl===3){const T=r.pick([[3,4,5],[5,12,13]]),k=T[2]===5?r.int(1,3):1;
+    return{html:`<p>Сторона прямоугольника равна ${T[0]*k}, а его диагональ равна ${T[2]*k}. Найдите площадь прямоугольника.</p>`,ans:T[0]*T[1]*k*k,kind:'num'};}
+  if(tpl===4){for(;;){const a=r.int(3,9),b=r.int(a+2,16),h=r.int(3,10);if(((a+b)*h)%2)continue;
+    return{html:`<p>Основания трапеции равны ${a} и ${b}, а высота равна ${h}. Найдите площадь трапеции.</p>`,ans:(a+b)*h/2,kind:'num'};}}
+  for(;;){const a=r.int(4,15),P=r.int(2*a+4,2*a+30);if(P%2)continue;
+    return{html:`<p>Периметр параллелограмма ABCD равен ${P}, сторона AB равна ${a}. Найдите сторону BC.</p>`,ans:P/2-a,kind:'num'};}
+}
+
+/* ---------- № 18. Клетчатая бумага ---------- */
+function svgGrid(W,H,poly,names,note){
+  const c=30,pad=26,w=W*c+2*pad,h=H*c+2*pad,X=x=>pad+x*c,Y=y=>pad+(H-y)*c;let g='';
+  for(let i=0;i<=W;i++)g+=`<line class="g-grid" x1="${X(i)}" y1="${Y(0)}" x2="${X(i)}" y2="${Y(H)}"/>`;
+  for(let j=0;j<=H;j++)g+=`<line class="g-grid" x1="${X(0)}" y1="${Y(j)}" x2="${X(W)}" y2="${Y(j)}"/>`;
+  g+=`<polygon class="g-poly" points="${poly.map(p=>X(p[0])+','+Y(p[1])).join(' ')}"/>`;
+  const cx=poly.reduce((a,p)=>a+p[0],0)/poly.length,cy=poly.reduce((a,p)=>a+p[1],0)/poly.length;
+  poly.forEach((p,i)=>{g+=`<circle class="g-dot" cx="${X(p[0])}" cy="${Y(p[1])}" r="4"/>`;
+    let vx=p[0]-cx,vy=-(p[1]-cy);const l=Math.hypot(vx,vy)||1;g+=`<text class="g-lab" x="${(X(p[0])+vx/l*16).toFixed(1)}" y="${(Y(p[1])+vy/l*16).toFixed(1)}">${names[i]}</text>`});
+  g+=`<text class="g-note" x="${pad}" y="${h+14}">${note}</text>`;
+  return`<svg class="gridfig" viewBox="0 0 ${w} ${h+24}" role="img" aria-label="Фигура на клетчатой бумаге">${g}</svg>`;
+}
+function gen18a(r,tpl){
+  const W=8,H=6;
+  if(tpl===0){for(let i=0;i<5000;i++){
+      const p=[0,1,2].map(()=>[r.int(0,W),r.int(0,H)]);
+      const a2=Math.abs(p[0][0]*(p[1][1]-p[2][1])+p[1][0]*(p[2][1]-p[0][1])+p[2][0]*(p[0][1]-p[1][1]));
+      if(a2%2||a2<8||a2>26)continue;
+      return{html:`<p>На клетчатой бумаге с размером клетки 1×1 изображён треугольник ABC. Найдите его площадь.</p>`,svg:svgGrid(W,H,p,['A','B','C'],'клетка 1×1'),ans:a2/2,kind:'num'};}}
+  const a=r.int(3,5),h=r.int(2,4),s=r.int(1,3),x0=r.int(0,W-a-s),y0=r.int(0,H-h);
+  const p=[[x0,y0],[x0+s,y0+h],[x0+s+a,y0+h],[x0+a,y0]];
+  return{html:`<p>На клетчатой бумаге с размером клетки 1×1 изображён параллелограмм ABCD. Найдите его площадь.</p>`,svg:svgGrid(W,H,p,['A','B','C','D'],'клетка 1×1'),ans:a*h,kind:'num'};
+}
+function gen18b(r,tpl){
+  const W=8,H=6;
+  if(tpl===0){for(let i=0;i<5000;i++){
+      const a=r.int(3,8),b=r.int(2,8);if(a===b||(a+b)%2)continue;const h=r.int(2,5);
+      const xa=r.int(0,W-a),xb=r.int(0,W-b),y0=r.int(0,H-h);
+      const p=[[xa,y0],[xb,y0+h],[xb+b,y0+h],[xa+a,y0]];
+      if(r.rng()<.5)return{html:`<p>На клетчатой бумаге с размером клетки 1×1 изображена трапеция ABCD. Найдите длину её средней линии.</p>`,svg:svgGrid(W,H,p,['A','B','C','D'],'клетка 1×1'),ans:(a+b)/2,kind:'num'};
+      return{html:`<p>На клетчатой бумаге с размером клетки 1×1 изображена трапеция ABCD. Найдите её площадь.</p>`,svg:svgGrid(W,H,p,['A','B','C','D'],'клетка 1×1'),ans:(a+b)*h/2,kind:'num'};}}
+  for(let i=0;i<5000;i++){
+    const px=r.pick([2,4,5]),qy=r.int(1,6);if(!terminating(Fr(qy,px))||qy%px===0)continue;
+    const x0=r.int(0,W-px),y0=r.int(0,H-qy);
+    const p=[[x0,y0],[x0+px,y0],[x0+px,y0+qy]];
+    return{html:`<p>На клетчатой бумаге с размером клетки 1×1 изображён треугольник ABC с прямым углом при вершине B. Найдите тангенс угла A.</p>`,svg:svgGrid(W,H,p,['A','B','C'],'клетка 1×1'),ans:rnd(qy/px),kind:'num'};}
+}
+
+/* ---------- № 19. Высказывания ---------- */
+const TRUE_S=[
+ 'Сумма смежных углов равна 180°.','Диагонали прямоугольника равны.','Диагонали ромба взаимно перпендикулярны.',
+ 'Вписанный угол, опирающийся на диаметр окружности, является прямым.','Средняя линия трапеции параллельна её основаниям.',
+ 'В равнобедренном треугольнике углы при основании равны.','Диагонали параллелограмма точкой пересечения делятся пополам.',
+ 'Сумма углов треугольника равна 180°.','Касательная к окружности перпендикулярна радиусу, проведённому в точку касания.',
+ 'Каждая медиана треугольника делит его на два треугольника равной площади.','Центр окружности, вписанной в треугольник, лежит на пересечении его биссектрис.',
+ 'Если диагонали параллелограмма равны, то этот параллелограмм является прямоугольником.','Площадь трапеции равна произведению полусуммы оснований на высоту.',
+ 'Через любые три точки, не лежащие на одной прямой, проходит окружность.','Любой квадрат является ромбом.',
+ 'Если два угла одного треугольника равны двум углам другого треугольника, то такие треугольники подобны.',
+ 'Вписанный угол равен половине центрального угла, опирающегося на ту же дугу.','В любой треугольник можно вписать окружность.'];
+const FALSE_S=[
+ 'Все углы ромба равны.','Диагонали любой трапеции равны.','Сумма углов выпуклого четырёхугольника равна 180°.',
+ 'Если диагонали четырёхугольника перпендикулярны, то этот четырёхугольник является ромбом.','Центральный угол равен вписанному углу, опирающемуся на ту же дугу.',
+ 'Диагонали любого прямоугольника взаимно перпендикулярны.','Площадь параллелограмма равна произведению двух его соседних сторон.',
+ 'Если две стороны треугольника равны 3 и 4, то третья сторона равна 5.','Около любого параллелограмма можно описать окружность.',
+ 'Все высоты равнобедренного треугольника равны.','Если угол равен 30°, то смежный с ним угол равен 60°.',
+ 'Две прямые, перпендикулярные третьей прямой, перпендикулярны друг другу.','Через точку, не лежащую на данной прямой, можно провести две прямые, параллельные этой прямой.',
+ 'Медиана равнобедренного треугольника, проведённая к боковой стороне, является его биссектрисой.','Площадь ромба равна произведению его диагоналей.',
+ 'Длина любой хорды окружности больше длины диаметра.','Если один из углов треугольника тупой, то остальные его углы тоже тупые.'];
+function gen19(r){
+  const t=r.int(1,2),T=r.shuffle(TRUE_S).slice(0,t),F=r.shuffle(FALSE_S).slice(0,3-t);
+  const all=r.shuffle(T.map(s=>[s,1]).concat(F.map(s=>[s,0])));
+  const ans=all.map((x,i)=>x[1]?String(i+1):'').join('');
+  return{html:`<p>Какие из следующих утверждений верны? В ответе запишите номера верных утверждений без пробелов и запятых, по возрастанию.</p><ol>${all.map(x=>`<li>${x[0]}</li>`).join('')}</ol>`,ans,kind:'digits'};
+}
+
+const SLOTS=[
+ {n:6,t:'Вычисления',g:gen6,pool:2},
+ {n:10,t:'Вероятность',g:gen10a,pool:3},
+ {n:10,t:'Вероятность',g:gen10b,pool:2},
+ {n:12,t:'Формулы',g:gen12,pool:6,grp:'f'},
+ {n:12,t:'Формулы',g:gen12,pool:6,grp:'f'},
+ {n:15,t:'Треугольники',g:gen15,pool:6,grp:'t'},
+ {n:15,t:'Треугольники',g:gen15,pool:6,grp:'t'},
+ {n:16,t:'Окружность',g:gen16,pool:5,grp:'c'},
+ {n:16,t:'Окружность',g:gen16,pool:5,grp:'c'},
+ {n:17,t:'Четырёхугольники',g:gen17,pool:6},
+ {n:18,t:'Клетчатая бумага',g:gen18a,pool:2},
+ {n:18,t:'Клетчатая бумага',g:gen18b,pool:2},
+ {n:19,t:'Высказывания',g:gen19,pool:1}
+];
+function pickTpls(rng){const used={};return SLOTS.map(s=>{if(!s.grp)return Math.floor(rng()*s.pool);const u=used[s.grp]=used[s.grp]||[];let k;do{k=Math.floor(rng()*s.pool)}while(u.includes(k));u.push(k);return k})}
+function build(slot,tpl,seed,pen){const r=makeR(mulberry32((seed*7919+pen*104729+slot*31+tpl*977)>>>0));return SLOTS[slot].g(r,tpl)}
+function check(task,input){
+  const s=String(input||'').trim();if(!s)return false;
+  if(task.kind==='digits')return s.replace(/\D/g,'').split('').sort().join('')===task.ans;
+  const v=parseFloat(s.replace(/\s/g,'').replace(',','.').replace('−','-'));
+  return isFinite(v)&&Math.abs(v-task.ans)<1e-6;
+}
+const ptsFor=pen=>pen===0?1:pen===1?0.5:0;
+const hashStr=s=>{let h=5381;const t=s+'|oge9';for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))>>>0;return h.toString(36)};
+/*GEN-END*/
+
+/* ---------- состояние и экран ---------- */
+const $=id=>document.getElementById(id);
+const TOTAL_SEC=35*60,LS='oge-trainer-v1';
+let state=null,running=false,leftFlag=false,timer=null;
+const store={get(){try{return JSON.parse(localStorage.getItem(LS)||'null')}catch(e){return null}},set(v){try{localStorage.setItem(LS,JSON.stringify(v))}catch(e){}}};
+function save(){store.set(state)}
+function show(id){['v-start','v-task','v-end','v-teacher'].forEach(v=>$(v).hidden=v!==id);window.scrollTo(0,0)}
+function cur(){return build(state.idx,state.tpl[state.idx],state.seed,state.pen[state.idx])}
+function secLeft(){return Math.max(0,TOTAL_SEC-Math.floor((Date.now()-state.start)/1000))}
+function clockStr(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function total(){return state.res.reduce((a,x)=>a+(x?x.sc:0),0)}
+
+function renderTicks(){
+  $('ticks').innerHTML=SLOTS.map((s,i)=>{const x=state.res[i];let c='tick';
+    if(x&&!x.skip)c+=' done';if(state.pen[i]>0)c+=' half';if(i===state.idx&&!state.done)c+=' cur';
+    return`<span class="${c}">${i+1}</span>`}).join('');
+}
+function renderTask(keepBanner){
+  const s=SLOTS[state.idx],t=cur();
+  $('t-count').textContent=`Задание ${state.idx+1} из ${SLOTS.length}`;
+  $('t-topic').textContent=`№ ${s.n} · ${s.t}`;
+  $('tn').textContent=`Задание ${s.n} ОГЭ`;
+  $('tq').innerHTML=t.html;$('tfig').innerHTML=t.svg||'';
+  const dig=t.kind==='digits';
+  $('ans').value='';$('ans').inputMode=dig?'numeric':'decimal';
+  $('ans-hint').textContent=dig?'Пример ответа: 13':'Ответ: число. Дробь пишите десятичной, например 0,25.';
+  if(!keepBanner)$('banner').hidden=true;
+  const p=state.pen[state.idx];
+  $('exits').textContent=state.exits?`Выходов со страницы: ${state.exits}`:'Выходов со страницы: 0';
+  $('exits').className='exits'+(state.exits?' bad':'');
+  renderTicks();tick();
+}
+function banner(msg){const b=$('banner');b.innerHTML=msg;b.hidden=false}
+function tick(){
+  if(!state||state.done)return;const s=secLeft();
+  $('clock').textContent=clockStr(s);$('clock').classList.toggle('low',s<=300);
+  if(s<=0)finish();
+}
+function startTimer(){clearInterval(timer);timer=setInterval(tick,500)}
+
+function startAttempt(name){
+  const seed=(Math.random()*2147483647)>>>0,rng=mulberry32(seed);
+  state={v:1,name,seed,start:Date.now(),idx:0,tpl:pickTpls(rng),pen:SLOTS.map(()=>0),res:SLOTS.map(()=>null),exits:0,away:false,done:false,spent:0};
+  save();running=true;show('v-task');renderTask();startTimer();
+}
+function submit(skip){
+  if(!running)return;
+  const t=cur(),pen=state.pen[state.idx],val=$('ans').value;
+  if(!skip&&!val.trim()){banner('Введите ответ или нажмите «Пропустить».');return}
+  const ok=!skip&&check(t,val);
+  state.res[state.idx]={sc:ok?ptsFor(pen):0,ok,skip:!!skip,pen};
+  next();
+}
+function next(){
+  if(state.idx>=SLOTS.length-1){finish();return}
+  state.idx++;save();renderTask();
+}
+function onLeave(){
+  if(!running||state.done||leftFlag)return;leftFlag=true;
+  state.pen[state.idx]++;state.exits++;state.away=true;save();
+  renderTask(true);
+  const p=state.pen[state.idx];
+  banner(`<b>Вы выходили со страницы.</b> Задание заменено новым, числа другие. ${p===1?'Максимум за него теперь 0,5 балла.':'За это задание баллов больше не будет.'}`);
+}
+function onReturn(){leftFlag=false;if(state&&state.away){state.away=false;save()}}
+document.addEventListener('visibilitychange',()=>{document.hidden?onLeave():onReturn()});
+window.addEventListener('blur',()=>{setTimeout(()=>{if(running&&!document.hasFocus())onLeave()},350)});
+window.addEventListener('focus',onReturn);
+
+function makeCode(){
+  const per=SLOTS.map((s,i)=>{const x=state.res[i];return x?(x.sc===1?'1':x.sc===0.5?'H':x.skip?'-':'0'):'-'}).join('');
+  const body=[state.name.replace(/\|/g,' '),total(),state.exits,Math.round(state.spent/60*10)/10,per].join('|');
+  const full=body+'|'+hashStr(body);
+  try{return btoa(unescape(encodeURIComponent(full)))}catch(e){return full}
+}
+function finish(){
+  if(!state||state.done&&!running)return;
+  running=false;state.done=true;state.spent=Math.min(TOTAL_SEC,Math.floor((Date.now()-state.start)/1000));
+  save();clearInterval(timer);renderEnd();
+}
+function renderEnd(){
+  show('v-end');
+  $('end-name').textContent=state.name;
+  const t=total();
+  $('score').innerHTML=`${fmt(t)} <small>из ${SLOTS.length}</small>`;
+  $('end-meta').textContent=`Выходов со страницы: ${state.exits}. Время: ${Math.floor(state.spent/60)} мин ${state.spent%60} с.`;
+  $('res').innerHTML=SLOTS.map((s,i)=>{const x=state.res[i];const c=x?(x.sc===1?'ok':(x.sc===0.5?'half':'')):'';
+    const m=x?(x.sc===1?'1':x.sc===0.5?'½':x.skip?'пропуск':'0'):'нет';return`<div class="${c}"><span>№ ${s.n}</span><b>${m}</b></div>`}).join('');
+  $('code').textContent=makeCode();
+}
+$('b-copy').addEventListener('click',async()=>{
+  const txt=$('code').textContent,n=$('copy-note');n.hidden=false;
+  try{await navigator.clipboard.writeText(txt);n.textContent='Код скопирован.'}catch(e){
+    const rg=document.createRange();rg.selectNodeContents($('code'));const sl=getSelection();sl.removeAllRanges();sl.addRange(rg);n.textContent='Код выделен. Скопируйте его вручную.'}
+});
+
+$('name').addEventListener('input',()=>{$('b-start').disabled=$('name').value.trim().length<3});
+$('name').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('b-start').disabled)$('b-start').click()});
+$('b-start').addEventListener('click',()=>{const n=$('name').value.trim().slice(0,40);if(n.length>=3)startAttempt(n)});
+$('b-ok').addEventListener('click',()=>submit(false));
+$('b-skip').addEventListener('click',()=>submit(true));
+$('ans').addEventListener('keydown',e=>{if(e.key==='Enter')submit(false)});
+
+/* ---------- учитель ---------- */
+function decode(line){
+  line=line.trim();if(!line)return null;
+  let s;try{s=decodeURIComponent(escape(atob(line)))}catch(e){return{err:'Не удалось прочитать код: '+line.slice(0,24)+'…'}}
+  const p=s.split('|');if(p.length<6)return{err:'Код повреждён: '+line.slice(0,24)+'…'};
+  const chk=p.pop(),body=p.join('|');
+  if(hashStr(body)!==chk)return{err:'Код изменён вручную: '+p[0]};
+  return{name:p[0],score:parseFloat(p[1]),exits:+p[2],min:+p[3],per:p[4]};
+}
+function renderTeacher(){
+  const lines=$('codes').value.split('\n').map(decode).filter(Boolean),errs=lines.filter(x=>x.err),ok=lines.filter(x=>!x.err);
+  const e=$('t-err');e.hidden=!errs.length;e.textContent=errs.map(x=>x.err).join('; ');
+  $('t-out').hidden=!ok.length;if(!ok.length)return;
+  ok.sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+  const cell=c=>c==='1'?'<td class="s1">✓</td>':c==='H'?'<td class="sh">½</td>':c==='0'?'<td class="s0">✗</td>':'<td class="s0">–</td>';
+  let h='<table><thead><tr><th>Ученик</th>'+SLOTS.map(s=>`<th>${s.n}</th>`).join('')+'<th>Баллы</th><th>Выходов</th><th>Мин</th></tr></thead><tbody>';
+  ok.forEach(x=>{h+=`<tr><td></td>`+x.per.split('').map(cell).join('')+`<td><b>${fmt(x.score)}</b></td><td>${x.exits}</td><td>${fmt(x.min)}</td></tr>`});
+  h+='</tbody><tfoot><tr><td>Решили, %</td>';
+  SLOTS.forEach((s,i)=>{const sc=ok.reduce((a,x)=>a+(x.per[i]==='1'?1:x.per[i]==='H'?.5:0),0),p=Math.round(100*sc/ok.length);h+=`<td class="${p<50?'low':''}">${p}</td>`});
+  h+=`<td>${fmt(Math.round(ok.reduce((a,x)=>a+x.score,0)/ok.length*10)/10)}</td><td>${fmt(Math.round(ok.reduce((a,x)=>a+x.exits,0)/ok.length*10)/10)}</td><td></td></tr></tfoot></table>`;
+  $('t-tbl').innerHTML=h;
+  ok.forEach((x,i)=>{$('t-tbl').querySelectorAll('tbody tr')[i].firstChild.textContent=x.name});
+  const nums=[...new Set(SLOTS.map(s=>s.n))];let t='<table><thead><tr><th>№ ОГЭ</th><th>Тема</th><th>Решили, %</th></tr></thead><tbody>';
+  nums.forEach(n=>{const idx=SLOTS.map((s,i)=>s.n===n?i:-1).filter(i=>i>=0);
+    const sc=idx.reduce((a,i)=>a+ok.reduce((b,x)=>b+(x.per[i]==='1'?1:x.per[i]==='H'?.5:0),0),0),p=Math.round(100*sc/(idx.length*ok.length));
+    t+=`<tr><td>${n}</td><td style="text-align:left">${SLOTS[idx[0]].t}</td><td class="${p<50?'low':''}">${p}</td></tr>`});
+  $('t-topics').innerHTML=t+'</tbody></table>';
+}
+$('b-table').addEventListener('click',renderTeacher);
+$('b-key').addEventListener('click',()=>{
+  const seed=(Math.random()*2147483647)>>>0,tp=pickTpls(mulberry32(seed));const k=$('k-out');k.hidden=false;
+  k.innerHTML='<h2>Пример варианта с ответами</h2><p class="hint">У каждого ученика свой вариант. Здесь случайный пример, нажмите кнопку ещё раз, чтобы увидеть другой.</p>'+
+  SLOTS.map((s,i)=>{const t=build(i,tp[i],seed,0);return`<div class="keyitem"><p class="tnum">${i+1}. № ${s.n} · ${s.t}</p><div class="tq">${t.html}</div><div class="fig">${t.svg||''}</div><p class="ans">Ответ: ${t.kind==='digits'?t.ans:fmt(t.ans)}</p></div>`}).join('');
+});
+
+$('b-reset').addEventListener('click',()=>{
+  try{localStorage.removeItem(LS)}catch(e){}
+  clearInterval(timer);running=false;leftFlag=false;state=null;
+  $('name').value='';$('b-start').disabled=true;
+  if(location.hash)location.hash='';else show('v-start');
+});
+/* ---------- маршрут ---------- */
+window.addEventListener('hashchange',()=>{
+  if(location.hash==='#teacher'){show('v-teacher')}
+  else if(running)show('v-task');else if(state&&state.done)renderEnd();else show('v-start');
+});
+(function boot(){
+  const saved=store.get();
+  if(location.hash==='#teacher'){show('v-teacher');if(saved&&!saved.done){state=saved}return}
+  if(saved&&saved.v===1){
+    state=saved;
+    if(state.done){renderEnd();return}
+    if(secLeft()<=0){finish();return}
+    running=true;
+    if(!state.away){state.pen[state.idx]++;state.exits++}
+    state.away=false;save();show('v-task');renderTask(true);
+    const p=state.pen[state.idx];
+    banner(`<b>Страница была закрыта или обновлена.</b> Задание заменено новым, числа другие. ${p===1?'Максимум за него теперь 0,5 балла.':'За это задание баллов больше не будет.'}`);
+    startTimer();return;
+  }
+  show('v-start');
+})();
+</script>
+
+</body></html>
